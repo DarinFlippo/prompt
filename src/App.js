@@ -16,8 +16,8 @@ export class App extends React.Component{
     this.setSearchType = this.setSearchType.bind(this);
     this.getData = this.getData.bind(this);
     this.baseUrl = "https://api.github.com/search";
-    this.username = "prompt-user";
-    this.token = "86f25a25662bb38b9058d5dc31c4f9794f16d145";
+    this.username = "";
+    this.token = "";
     this.page = 1;
     this.searchFor = "";
     this.totalItems = 0; 
