@@ -1,0 +1,37 @@
+.results-container{
+  width: 700px;
+  margin-top: 30px;
+}
+
+.pager-container{
+  width: 700px;
+}
+
+.login-cell{
+  width: 150px;
+  height: 58px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.image-cell{
+  width: 58px;
+  height: 58px;
+  align-items: center;
+}
+
+.link-cell{
+  width: 250px;
+  height: 58px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.table{
+  width: 600px;
+  align-self: center;
+}
+
+
+
+
