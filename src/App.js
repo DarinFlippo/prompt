@@ -6,6 +6,8 @@ import { encode } from "base-64";
 import Pagination from "react-js-pagination";
 import './bootstrap.min.css';
 import './App.css'
+import { data } from 'jquery';
+import { ajax } from 'jquery';
 
 export class App extends React.Component{
 
@@ -15,7 +17,10 @@ export class App extends React.Component{
     this.handleChange = this.handleChange.bind(this);
     this.setSearchType = this.setSearchType.bind(this);
     this.getData = this.getData.bind(this);
+    this.getUserData = this.getUserData.bind(this);
+    this.renderResultRows = this.renderResultRows.bind(this);
     this.baseUrl = "https://api.github.com/search";
+    this.userQuery = "https://api.github.com/users";
     this.username = "";
     this.token = "";
     this.page = 1;
@@ -89,6 +94,59 @@ export class App extends React.Component{
       }
     );
   }
+
+  getUserData(user){
+    const url = `${this.userQuery}/${user}`;
+    let returned = '';
+    console.log(`url is ${url}`);
+    ajax({
+      url: url,
+      data: user,
+      async: false,
+      headers: { 
+        'Authorization': 'Basic ' + encode(this.username + ":" + this.token),
+        'Content-Type': 'application/json',
+        'Accept': 'application/vnd.github.v3+json'
+      },
+      success: function(data){returned = data;}
+    });
+    //console.log(`data is ${JSON.stringify(returned)}`)
+    return returned;
+    /* return fetch(url, 
+      {
+        method: 'get', 
+        headers: new Headers(
+          {
+            'Authorization': 'Basic ' + encode(this.username + ":" + this.token),
+            'Content-Type': 'application/json',
+            'Accept': 'application/vnd.github.v3+json'
+          }
+        )
+      })
+      .then(res => res.json()); */
+  }
+  
+
+  
+  // Build the table body
+  renderResultRows = () => {
+    if (this.state.resultrows != null){
+       return this.state.resultrows.map((r) => {
+        const data = this.getUserData(r.login);
+        return (
+        <tr key={r.id}>
+            <td>{r.login}</td>
+            <td><img src={r.avatar_url} width="50" height="50"/></td>
+            <td><a target="_blank" rel="noopener noreferrer" href={r.html_url}>{r.html_url}</a></td>   
+            <td>{data.email}</td>
+            <td>{data.location}</td>
+            <td>{data.created_at}</td>
+            <td>{data.updated_at}</td>
+        </tr>
+        )
+      }); 
+    }
+  }
   
   // Build the NavBar Html
   renderNav = () => {
@@ -118,26 +176,16 @@ export class App extends React.Component{
   // Datatables.net JavaScript library.
   renderHeader = () => {
     return <thead><tr>
-      <th className="login-cell">Username</th>
-      <th className="image-cell">Avatar</th>
-      <th className="link-cell">Github Link</th>
+      <th scope="col" className="login-cell">Username</th>
+      <th scope="col" className="image-cell">Avatar</th>
+      <th scope="col" className="link-cell">Github Link</th>
+      <th scope="col" className="link-cell">Email</th>
+      <th scope="col" className="link-cell">Location</th>
+      <th scope="col" className="link-cell">Created</th>
+      <th scope="col" className="link-cell">Updated</th>
     </tr></thead>
   }
 
-  // Build the table body
-  renderResultRows = () => {
-    if (this.state.resultrows != null){
-      return this.state.resultrows.map((r) => {
-        return (
-        <tr key={r.id}>
-            <td className="login-cell">{r.login}</td>
-            <td className="image-cell"><img src={r.avatar_url} width="50" height="50"/></td>
-            <td className="link-cell"><a target="_blank" rel="noopener noreferrer" href={r.html_url}>{r.html_url}</a></td>
-        </tr>
-        )
-      });
-    }
-  }
 
   // Build the pagination component
   renderPager = () => {
@@ -163,8 +211,8 @@ export class App extends React.Component{
         {this.renderNav()}
         <div className="container mx-auto results-container">
           <div className="row">
-            <div className="col">
-              <table className="table">
+            <div className="col mt-3">
+              <table className="table table-striped table-dark table-hover">
                 {this.renderHeader()}
                 <tbody>
                   {this.renderResultRows()}
