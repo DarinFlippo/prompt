@@ -27,6 +27,7 @@ export class App extends React.Component{
     this.searchFor = "";
     this.totalItems = 0; 
     this.itemsPerPage = 5;
+    this.userData = "";
   }
 
   // Paging event handler
@@ -49,8 +50,9 @@ export class App extends React.Component{
     this.searchFor = event.target.value;
     this.page = 1;
     this.totalItems = 0;
-    if (this.searchFor != null && event.target.value.length > 0)
-      this.setState({resultrows: this.getData(event.target.value)});
+    if (this.searchFor != null && event.target.value.length > 0){
+       this.getData(event.target.value);
+    }
     else
       this.setState({resultrows: null});
   }
@@ -84,35 +86,21 @@ export class App extends React.Component{
     })
     .then(res => res.json())
     .then(
-      (result) => {
-        this.totalItems = result.total_count;
-        this.setState({isFetching: false, resultrows: result.items});
+      (res) => {
+        this.totalItems = res.total_count;
+        this.setState({resultrows: res.items});
       },
       (e) => {
         console.log(`Error: ${e}.`);
-        this.setState({isFetching: false, error: e, resultrows: null});
+        this.setState({error: e, resultrows: null});
       }
     );
   }
 
-  getUserData(user){
+  getUserData = (user) => {
     const url = `${this.userQuery}/${user}`;
-    let returned = '';
     console.log(`url is ${url}`);
-    ajax({
-      url: url,
-      data: user,
-      async: false,
-      headers: { 
-        'Authorization': 'Basic ' + encode(this.username + ":" + this.token),
-        'Content-Type': 'application/json',
-        'Accept': 'application/vnd.github.v3+json'
-      },
-      success: function(data){returned = data;}
-    });
-    //console.log(`data is ${JSON.stringify(returned)}`)
-    return returned;
-    /* return fetch(url, 
+     return fetch(url, 
       {
         method: 'get', 
         headers: new Headers(
@@ -123,25 +111,23 @@ export class App extends React.Component{
           }
         )
       })
-      .then(res => res.json()); */
+      .then(res => res.json()); 
   }
-  
 
-  
   // Build the table body
   renderResultRows = () => {
     if (this.state.resultrows != null){
        return this.state.resultrows.map((r) => {
-        const data = this.getUserData(r.login);
+        this.getUserData(r.login).then(res => this.userData = res);
         return (
         <tr key={r.id}>
             <td>{r.login}</td>
             <td><img src={r.avatar_url} width="50" height="50"/></td>
             <td><a target="_blank" rel="noopener noreferrer" href={r.html_url}>{r.html_url}</a></td>   
-            <td>{data.email}</td>
-            <td>{data.location}</td>
-            <td>{data.created_at}</td>
-            <td>{data.updated_at}</td>
+            <td>{this.userData.email}</td>
+            <td>{this.userData.location}</td>
+            <td>{this.userData.created_at}</td>
+            <td>{this.userData.updated_at}</td>
         </tr>
         )
       }); 
