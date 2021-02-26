@@ -4,10 +4,9 @@ import Form from 'react-bootstrap/Form';
 import FormControl from 'react-bootstrap/FormControl';
 import { encode } from "base-64";
 import Pagination from "react-js-pagination";
+import TableRows from './TableRows'
 import './bootstrap.min.css';
 import './App.css'
-import { data } from 'jquery';
-import { ajax } from 'jquery';
 
 export class App extends React.Component{
 
@@ -27,7 +26,6 @@ export class App extends React.Component{
     this.searchFor = "";
     this.totalItems = 0; 
     this.itemsPerPage = 5;
-    this.userData = "";
   }
 
   // Paging event handler
@@ -58,7 +56,7 @@ export class App extends React.Component{
   }
 
   // Fetch data from GitHub
-  getData(user){
+  async getData(user){
     var url = `${this.baseUrl}/users?q=${user}`;
     
     if (this.state.searchType == 'login'){
@@ -73,7 +71,7 @@ export class App extends React.Component{
     // Used a  temporary account to avoid data throttling
     // because each keypress executes a fetch, they add up quickly.
     // TODO:  Implement input rate control on this end.
-    fetch(url, 
+    var users = await fetch(url, 
     {
       method: 'get', 
       headers: new Headers(
@@ -83,55 +81,56 @@ export class App extends React.Component{
           'Accept': 'application/vnd.github.v3+json'
         }
       )
-    })
-    .then(res => res.json())
-    .then(
-      (res) => {
-        this.totalItems = res.total_count;
-        this.setState({resultrows: res.items});
-      },
-      (e) => {
-        console.log(`Error: ${e}.`);
-        this.setState({error: e, resultrows: null});
+    });
+
+    var user_data = await users.json(); 
+    this.totalItems = user_data.total_count;
+    
+    var rows = new Array();
+    let len = user_data.items.length;
+    for(var i = 0; i < len; i++)
+    {
+      var row = user_data.items[i];
+      var data = await this.getUserData(row.login);
+      var obj = 
+      {
+        id: row.id,
+        login: row.login,
+        avatar_url: row.avatar_url,
+        html_url: row.html_url,
+        email: data.email ?? "",
+        location: data.location ?? "",
+        created_at: data.created_at ?? "",
+        updated_at: data.updated_at ?? ""
       }
-    );
+      rows.push(obj);
+    }
+
+    this.setState({resultrows: rows});
+      
   }
 
-  getUserData = (user) => {
+  async getUserData(user){
     const url = `${this.userQuery}/${user}`;
-    console.log(`url is ${url}`);
-     return fetch(url, 
-      {
-        method: 'get', 
-        headers: new Headers(
-          {
-            'Authorization': 'Basic ' + encode(this.username + ":" + this.token),
-            'Content-Type': 'application/json',
-            'Accept': 'application/vnd.github.v3+json'
-          }
-        )
-      })
-      .then(res => res.json()); 
+    let response = await fetch(url, 
+    {
+      method: 'get', 
+      headers: new Headers(
+        {
+          'Authorization': 'Basic ' + encode(this.username + ":" + this.token),
+          'Content-Type': 'application/json',
+          'Accept': 'application/vnd.github.v3+json'
+        }
+      )
+    });
+
+    return await response.json();  
   }
 
   // Build the table body
   renderResultRows = () => {
-    if (this.state.resultrows != null){
-       return this.state.resultrows.map((r) => {
-        this.getUserData(r.login).then(res => this.userData = res);
-        return (
-        <tr key={r.id}>
-            <td>{r.login}</td>
-            <td><img src={r.avatar_url} width="50" height="50"/></td>
-            <td><a target="_blank" rel="noopener noreferrer" href={r.html_url}>{r.html_url}</a></td>   
-            <td>{this.userData.email}</td>
-            <td>{this.userData.location}</td>
-            <td>{this.userData.created_at}</td>
-            <td>{this.userData.updated_at}</td>
-        </tr>
-        )
-      }); 
-    }
+    if (this.state.resultrows != null && this.state.resultrows.length > 0)
+      return(<TableRows rowData={this.state.resultrows}/>)
   }
   
   // Build the NavBar Html
